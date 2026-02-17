@@ -13,7 +13,8 @@ import {
     Menu,
     X,
     MapPinned,
-    BarChart3
+    BarChart3,
+    History
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,6 +25,7 @@ const navItems = [
     { href: '/meters', label: 'จดมิเตอร์', icon: Gauge },
     { href: '/floorplan', label: 'แผนผังห้อง', icon: MapPinned },
     { href: '/billing', label: 'บิลรายเดือน', icon: Receipt },
+    { href: '/history', label: 'ประวัติชำระ', icon: History },
     { href: '/report', label: 'รายงาน', icon: BarChart3 },
     { href: '/settings', label: 'ตั้งค่า', icon: Settings },
 ];
