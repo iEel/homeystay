@@ -1,10 +1,11 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 async function runSchema() {
     const pool = new Pool({
-        connectionString: 'postgresql://postgres:p@assw0rd@192.168.1.45:5432/postgres',
+        connectionString: process.env.DATABASE_URL,
     });
 
     try {

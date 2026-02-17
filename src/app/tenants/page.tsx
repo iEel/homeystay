@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Users, Plus, Edit2, Trash2, Phone, CreditCard } from 'lucide-react';
 import { todayBangkok } from '@/lib/timezone';
 import Modal from '@/components/Modal';
+import Toast from '@/components/Toast';
+import type { ToastType } from '@/components/Toast';
 
 interface Tenant {
     id: number;
@@ -33,6 +35,7 @@ export default function TenantsPage() {
     const [form, setForm] = useState({
         name: '', phone: '', id_card: '', room_id: '', move_in_date: '', is_active: true, occupants: '1'
     });
+    const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
     const fetchData = async () => {
         const [t, r] = await Promise.all([
@@ -70,27 +73,43 @@ export default function TenantsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const payload = {
-            ...form,
-            room_id: form.room_id ? parseInt(form.room_id) : null,
-            occupants: parseInt(form.occupants) || 1,
-            ...(editTenant ? { id: editTenant.id } : {}),
-        };
+        try {
+            const payload = {
+                ...form,
+                room_id: form.room_id ? parseInt(form.room_id) : null,
+                occupants: parseInt(form.occupants) || 1,
+                ...(editTenant ? { id: editTenant.id } : {}),
+            };
 
-        await fetch('/api/tenants', {
-            method: editTenant ? 'PUT' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
+            const res = await fetch('/api/tenants', {
+                method: editTenant ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
 
-        setModalOpen(false);
-        fetchData();
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'เกิดข้อผิดพลาด');
+            }
+
+            setModalOpen(false);
+            setToast({ message: editTenant ? 'แก้ไขผู้เช่าสำเร็จ' : 'เพิ่มผู้เช่าสำเร็จ', type: 'success' });
+            fetchData();
+        } catch (err) {
+            setToast({ message: err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ', type: 'error' });
+        }
     };
 
     const handleDelete = async (id: number) => {
         if (!confirm('ต้องการลบผู้เช่านี้?')) return;
-        await fetch(`/api/tenants?id=${id}`, { method: 'DELETE' });
-        fetchData();
+        try {
+            const res = await fetch(`/api/tenants?id=${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('ลบไม่สำเร็จ');
+            setToast({ message: 'ลบผู้เช่าสำเร็จ', type: 'success' });
+            fetchData();
+        } catch {
+            setToast({ message: 'ลบผู้เช่าไม่สำเร็จ', type: 'error' });
+        }
     };
 
     if (loading) {
@@ -121,7 +140,7 @@ export default function TenantsPage() {
             {/* Mobile Card Layout */}
             <div className="lg:hidden space-y-3">
                 {tenants.map((tenant) => (
-                    <div key={tenant.id} className="bg-white rounded-2xl shadow-sm border border-[var(--color-border)] p-4 animate-fade-in">
+                    <div key={tenant.id} className="bg-white rounded-2xl shadow-sm border border-[var(--color-border)] p-4">
                         <div className="flex items-start justify-between gap-3 mb-3">
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
@@ -363,6 +382,8 @@ export default function TenantsPage() {
                     </button>
                 </form>
             </Modal>
+
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 }

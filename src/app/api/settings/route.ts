@@ -20,6 +20,13 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const entries = Object.entries(body) as [string, string][];
 
+        // Validate all values are numeric
+        for (const [key, value] of entries) {
+            if (isNaN(Number(value))) {
+                return NextResponse.json({ error: `ค่า ${key} ต้องเป็นตัวเลข` }, { status: 400 });
+            }
+        }
+
         for (const [key, value] of entries) {
             await pool.query('UPDATE settings SET value=$1 WHERE key=$2', [value, key]);
         }

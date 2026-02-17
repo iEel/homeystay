@@ -36,6 +36,13 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { name, room_ids } = body;
 
+        if (!name || typeof name !== 'string' || !name.trim()) {
+            return NextResponse.json({ error: 'กรุณาระบุชื่อห้องน้ำ' }, { status: 400 });
+        }
+        if (room_ids && !Array.isArray(room_ids)) {
+            return NextResponse.json({ error: 'room_ids ต้องเป็น array' }, { status: 400 });
+        }
+
         const result = await pool.query(
             'INSERT INTO bathrooms (name) VALUES ($1) RETURNING *',
             [name]
@@ -65,7 +72,15 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const { id, name, room_ids } = body;
 
-        await pool.query('UPDATE bathrooms SET name=$1 WHERE id=$2', [name, id]);
+        if (!id) return NextResponse.json({ error: 'ไม่พบ ID ห้องน้ำ' }, { status: 400 });
+        if (!name || typeof name !== 'string' || !name.trim()) {
+            return NextResponse.json({ error: 'กรุณาระบุชื่อห้องน้ำ' }, { status: 400 });
+        }
+        if (room_ids && !Array.isArray(room_ids)) {
+            return NextResponse.json({ error: 'room_ids ต้องเป็น array' }, { status: 400 });
+        }
+
+        await pool.query('UPDATE bathrooms SET name=$1 WHERE id=$2', [name.trim(), id]);
 
         // Delete old mappings and insert new ones
         await pool.query('DELETE FROM bathroom_rooms WHERE bathroom_id=$1', [id]);

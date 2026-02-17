@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { DoorOpen, Plus, Edit2, Trash2, Building } from 'lucide-react';
 import Modal from '@/components/Modal';
+import Toast from '@/components/Toast';
+import type { ToastType } from '@/components/Toast';
 
 interface Room {
     id: number;
@@ -23,6 +25,7 @@ export default function RoomsPage() {
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editRoom, setEditRoom] = useState<Room | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
     const [form, setForm] = useState({ number: '', floor: '1', monthly_rent: '', status: 'available' });
 
     const fetchRooms = async () => {
@@ -53,27 +56,43 @@ export default function RoomsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const payload = {
-            ...form,
-            floor: parseInt(form.floor),
-            monthly_rent: parseFloat(form.monthly_rent),
-            ...(editRoom ? { id: editRoom.id } : {}),
-        };
+        try {
+            const payload = {
+                ...form,
+                floor: parseInt(form.floor),
+                monthly_rent: parseFloat(form.monthly_rent),
+                ...(editRoom ? { id: editRoom.id } : {}),
+            };
 
-        await fetch('/api/rooms', {
-            method: editRoom ? 'PUT' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
+            const res = await fetch('/api/rooms', {
+                method: editRoom ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
 
-        setModalOpen(false);
-        fetchRooms();
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'เกิดข้อผิดพลาด');
+            }
+
+            setModalOpen(false);
+            setToast({ message: editRoom ? 'แก้ไขห้องสำเร็จ' : 'เพิ่มห้องสำเร็จ', type: 'success' });
+            fetchRooms();
+        } catch (err) {
+            setToast({ message: err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ', type: 'error' });
+        }
     };
 
     const handleDelete = async (id: number) => {
         if (!confirm('ต้องการลบห้องนี้?')) return;
-        await fetch(`/api/rooms?id=${id}`, { method: 'DELETE' });
-        fetchRooms();
+        try {
+            const res = await fetch(`/api/rooms?id=${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('ลบไม่สำเร็จ');
+            setToast({ message: 'ลบห้องสำเร็จ', type: 'success' });
+            fetchRooms();
+        } catch {
+            setToast({ message: 'ลบห้องไม่สำเร็จ', type: 'error' });
+        }
     };
 
     if (loading) {
@@ -211,6 +230,8 @@ export default function RoomsPage() {
                     </button>
                 </form>
             </Modal>
+
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 }

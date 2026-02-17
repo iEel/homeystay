@@ -15,9 +15,25 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { number, floor, monthly_rent, status } = body;
+
+        // Validation
+        if (!number || typeof number !== 'string' || !number.trim()) {
+            return NextResponse.json({ error: 'กรุณาระบุหมายเลขห้อง' }, { status: 400 });
+        }
+        if (!floor || isNaN(Number(floor)) || Number(floor) < 1) {
+            return NextResponse.json({ error: 'กรุณาระบุชั้นที่ถูกต้อง' }, { status: 400 });
+        }
+        if (!monthly_rent || isNaN(Number(monthly_rent)) || Number(monthly_rent) < 0) {
+            return NextResponse.json({ error: 'กรุณาระบุค่าเช่าที่ถูกต้อง' }, { status: 400 });
+        }
+        const validStatuses = ['available', 'occupied', 'maintenance'];
+        if (status && !validStatuses.includes(status)) {
+            return NextResponse.json({ error: 'สถานะไม่ถูกต้อง' }, { status: 400 });
+        }
+
         const result = await pool.query(
             'INSERT INTO rooms (number, floor, monthly_rent, status) VALUES ($1, $2, $3, $4) RETURNING *',
-            [number, floor, monthly_rent, status || 'available']
+            [number.trim(), floor, monthly_rent, status || 'available']
         );
         return NextResponse.json(result.rows[0], { status: 201 });
     } catch (error) {
@@ -30,9 +46,25 @@ export async function PUT(request: Request) {
     try {
         const body = await request.json();
         const { id, number, floor, monthly_rent, status } = body;
+
+        if (!id) return NextResponse.json({ error: 'ไม่พบ ID ห้อง' }, { status: 400 });
+        if (!number || typeof number !== 'string' || !number.trim()) {
+            return NextResponse.json({ error: 'กรุณาระบุหมายเลขห้อง' }, { status: 400 });
+        }
+        if (!floor || isNaN(Number(floor)) || Number(floor) < 1) {
+            return NextResponse.json({ error: 'กรุณาระบุชั้นที่ถูกต้อง' }, { status: 400 });
+        }
+        if (!monthly_rent || isNaN(Number(monthly_rent)) || Number(monthly_rent) < 0) {
+            return NextResponse.json({ error: 'กรุณาระบุค่าเช่าที่ถูกต้อง' }, { status: 400 });
+        }
+        const validStatuses = ['available', 'occupied', 'maintenance'];
+        if (status && !validStatuses.includes(status)) {
+            return NextResponse.json({ error: 'สถานะไม่ถูกต้อง' }, { status: 400 });
+        }
+
         const result = await pool.query(
             'UPDATE rooms SET number=$1, floor=$2, monthly_rent=$3, status=$4 WHERE id=$5 RETURNING *',
-            [number, floor, monthly_rent, status, id]
+            [number.trim(), floor, monthly_rent, status, id]
         );
         return NextResponse.json(result.rows[0]);
     } catch (error) {

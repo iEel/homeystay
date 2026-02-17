@@ -21,9 +21,16 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { name, phone, id_card, room_id, move_in_date, occupants } = body;
 
+        if (!name || typeof name !== 'string' || !name.trim()) {
+            return NextResponse.json({ error: 'กรุณาระบุชื่อผู้เช่า' }, { status: 400 });
+        }
+        if (occupants && (isNaN(Number(occupants)) || Number(occupants) < 1)) {
+            return NextResponse.json({ error: 'จำนวนผู้อยู่อาศัยต้องมากกว่า 0' }, { status: 400 });
+        }
+
         const result = await pool.query(
             'INSERT INTO tenants (name, phone, id_card, room_id, move_in_date, occupants) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [name, phone, id_card, room_id || null, move_in_date, occupants || 1]
+            [name.trim(), phone, id_card, room_id || null, move_in_date, occupants || 1]
         );
 
         // Update room status
@@ -42,6 +49,14 @@ export async function PUT(request: Request) {
     try {
         const body = await request.json();
         const { id, name, phone, id_card, room_id, move_in_date, move_out_date, is_active, occupants } = body;
+
+        if (!id) return NextResponse.json({ error: 'ไม่พบ ID ผู้เช่า' }, { status: 400 });
+        if (!name || typeof name !== 'string' || !name.trim()) {
+            return NextResponse.json({ error: 'กรุณาระบุชื่อผู้เช่า' }, { status: 400 });
+        }
+        if (occupants && (isNaN(Number(occupants)) || Number(occupants) < 1)) {
+            return NextResponse.json({ error: 'จำนวนผู้อยู่อาศัยต้องมากกว่า 0' }, { status: 400 });
+        }
 
         // Get old room_id
         const old = await pool.query('SELECT room_id FROM tenants WHERE id=$1', [id]);

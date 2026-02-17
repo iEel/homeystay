@@ -230,8 +230,7 @@ export default function BillingPage() {
                     return (
                         <div
                             key={inv.id}
-                            className="bg-white rounded-2xl p-6 shadow-sm border border-[var(--color-border)] hover:shadow-md animate-fade-in"
-                            style={{ animationDelay: `${i * 50}ms` }}
+                            className="bg-white rounded-2xl p-6 shadow-sm border border-[var(--color-border)] hover:shadow-md transition-shadow"
                         >
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
@@ -272,7 +271,7 @@ export default function BillingPage() {
                             </div>
 
                             {/* Total + Actions */}
-                            <div className="flex items-center justify-between pt-4 border-t border-[var(--color-border)]">
+                            <div className="flex items-center justify-between pt-4 border-t border-[var(--color-border)] flex-wrap gap-3">
                                 <div>
                                     <span className="text-sm text-[var(--color-text-secondary)]">ยอดรวม</span>
                                     <p className="text-xl font-bold text-indigo-600">฿{parseFloat(String(inv.total_amount)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
