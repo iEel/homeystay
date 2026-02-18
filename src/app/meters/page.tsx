@@ -88,6 +88,10 @@ export default function MetersPage() {
     const [month, setMonth] = useState(() => currentMonthBangkok());
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [savingRoomId, setSavingRoomId] = useState<number | null>(null);
+    const [savedRoomIds, setSavedRoomIds] = useState<Set<number>>(new Set());
+    const [savingBathroomId, setSavingBathroomId] = useState<number | null>(null);
+    const [savedBathroomIds, setSavedBathroomIds] = useState<Set<number>>(new Set());
     const [tenants, setTenants] = useState<{ room_id: number; occupants: number; is_active: boolean }[]>([]);
     const [electricExtraUnits, setElectricExtraUnits] = useState(0);
     const [waterExtraUnits, setWaterExtraUnits] = useState(0);
@@ -283,6 +287,85 @@ export default function MetersPage() {
         }
     };
 
+    // Per-room save
+    const handleSaveRoom = async (roomId: number) => {
+        const r = readings[roomId];
+        if (!r || (r.electric_curr === '' && r.water_faucet_curr === '')) {
+            setToast('⚠️ กรุณากรอกเลขมิเตอร์ก่อนบันทึก');
+            setTimeout(() => setToast(null), 3000);
+            return;
+        }
+
+        setSavingRoomId(roomId);
+        try {
+            const meterData = [{
+                room_id: roomId,
+                month,
+                electric_prev: parseFloat(r.electric_prev) || 0,
+                electric_curr: parseFloat(r.electric_curr) || 0,
+                water_faucet_prev: parseFloat(r.water_faucet_prev) || 0,
+                water_faucet_curr: parseFloat(r.water_faucet_curr) || 0,
+                override_electric_units: r.override_electric_units || null,
+                override_water_units: r.override_water_units || null,
+            }];
+
+            const res = await fetch('/api/meters', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ readings: meterData, sharedReadings: [] }),
+            });
+
+            if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+            setSavedRoomIds(prev => new Set(prev).add(roomId));
+            setTimeout(() => setSavedRoomIds(prev => { const next = new Set(prev); next.delete(roomId); return next; }), 3000);
+        } catch (err) {
+            console.error('Save room error:', err);
+            setToast('❌ บันทึกไม่สำเร็จ กรุณาลองใหม่');
+            setTimeout(() => setToast(null), 5000);
+        } finally {
+            setSavingRoomId(null);
+        }
+    };
+
+    // Per-bathroom save
+    const handleSaveBathroom = async (bathroomId: number) => {
+        const sr = sharedReadings[bathroomId];
+        if (!sr || sr.water_curr === '') {
+            setToast('⚠️ กรุณากรอกเลขมิเตอร์ก่อนบันทึก');
+            setTimeout(() => setToast(null), 3000);
+            return;
+        }
+
+        setSavingBathroomId(bathroomId);
+        try {
+            const sharedData = [{
+                bathroom_id: bathroomId,
+                month,
+                water_prev: parseFloat(sr.water_prev) || 0,
+                water_curr: parseFloat(sr.water_curr) || 0,
+                override_water_units: sr.override_water_units || null,
+            }];
+
+            const res = await fetch('/api/meters', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ readings: [], sharedReadings: sharedData }),
+            });
+
+            if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+            setSavedBathroomIds(prev => new Set(prev).add(bathroomId));
+            setTimeout(() => setSavedBathroomIds(prev => { const next = new Set(prev); next.delete(bathroomId); return next; }), 3000);
+        } catch (err) {
+            console.error('Save bathroom error:', err);
+            setToast('❌ บันทึกไม่สำเร็จ กรุณาลองใหม่');
+            setTimeout(() => setToast(null), 5000);
+        } finally {
+            setSavingBathroomId(null);
+        }
+    };
+
     // Format month label
     const monthLabel = (m: string) => {
         const [y, mo] = m.split('-');
@@ -467,14 +550,33 @@ export default function MetersPage() {
                                         {room.status === 'occupied' ? 'มีผู้เช่า' : room.status === 'available' ? 'ว่าง' : 'ซ่อมบำรุง'}
                                     </span>
                                 </div>
-                                <button
-                                    onClick={() => setHistoryModal({ type: 'room', id: room.id, name: `ห้อง ${room.number}` })}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer transition-colors"
-                                    title="ดูประวัติย้อนหลัง"
-                                >
-                                    <History size={14} />
-                                    ประวัติ
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setHistoryModal({ type: 'room', id: room.id, name: `ห้อง ${room.number}` })}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer transition-colors"
+                                        title="ดูประวัติย้อนหลัง"
+                                    >
+                                        <History size={14} />
+                                        ประวัติ
+                                    </button>
+                                    <button
+                                        onClick={() => handleSaveRoom(room.id)}
+                                        disabled={savingRoomId === room.id}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all font-medium ${savedRoomIds.has(room.id)
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
+                                            } disabled:opacity-50`}
+                                        title="บันทึกห้องนี้"
+                                    >
+                                        {savingRoomId === room.id ? (
+                                            <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> บันทึก...</>
+                                        ) : savedRoomIds.has(room.id) ? (
+                                            <><CheckCircle size={14} /> บันทึกแล้ว</>
+                                        ) : (
+                                            <><Save size={14} /> บันทึก</>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -709,6 +811,23 @@ export default function MetersPage() {
                                             <History size={14} />
                                             ประวัติ
                                         </button>
+                                        <button
+                                            onClick={() => handleSaveBathroom(bathroom.id)}
+                                            disabled={savingBathroomId === bathroom.id}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all font-medium ${savedBathroomIds.has(bathroom.id)
+                                                ? 'bg-emerald-100 text-emerald-700'
+                                                : 'bg-cyan-500 hover:bg-cyan-600 text-white shadow-sm shadow-cyan-500/20'
+                                                } disabled:opacity-50`}
+                                            title="บันทึกห้องน้ำนี้"
+                                        >
+                                            {savingBathroomId === bathroom.id ? (
+                                                <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> บันทึก...</>
+                                            ) : savedBathroomIds.has(bathroom.id) ? (
+                                                <><CheckCircle size={14} /> บันทึกแล้ว</>
+                                            ) : (
+                                                <><Save size={14} /> บันทึก</>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -872,6 +991,22 @@ export default function MetersPage() {
                     </div>
                 </div>
             )}
+
+            {/* Sticky save-all footer for mobile */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
+                <div className="bg-white/95 backdrop-blur-lg border-t border-gray-200 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 disabled:opacity-50 cursor-pointer transition-colors"
+                    >
+                        <Save size={20} />
+                        {saving ? 'กำลังบันทึกทั้งหมด...' : 'บันทึกทั้งหมด'}
+                    </button>
+                </div>
+            </div>
+            {/* Bottom spacer for mobile sticky button */}
+            <div className="h-20 md:hidden" />
 
             {/* Toast notification */}
             {toast && (
