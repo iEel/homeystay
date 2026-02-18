@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Kanit } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const kanit = Kanit({
   subsets: ["thai", "latin"],
@@ -12,6 +13,24 @@ const kanit = Kanit({
 export const metadata: Metadata = {
   title: "HomeyStay — ระบบจัดการห้องเช่า",
   description: "ระบบจัดการห้องเช่ารายเดือน คำนวณค่าไฟ ค่าน้ำอัตโนมัติ",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "HomeyStay",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6366f1",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -22,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="th">
       <body className={`${kanit.variable} font-[family-name:var(--font-kanit)] antialiased`}>
+        <ServiceWorkerRegistration />
         <div className="flex min-h-screen">
           <Sidebar />
           <main className="flex-1 ml-64 p-4 pt-16 lg:ml-64 lg:p-8 lg:pt-8 max-lg:ml-0">
@@ -32,3 +52,4 @@ export default function RootLayout({
     </html>
   );
 }
+
