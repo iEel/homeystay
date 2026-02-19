@@ -39,6 +39,7 @@ node scripts/migrate-occupants.js
 node scripts/migrate-floorplan.js
 node scripts/migrate-floorplan-resize.js
 node scripts/migrate-alert-thresholds.js
+node scripts/migrate-indexes.js
 
 # เริ่ม dev server
 npm run dev        # http://localhost:3000
@@ -59,7 +60,8 @@ homeystay/
 │   ├── migrate-occupants.js      # Occupant count
 │   ├── migrate-floorplan.js      # Floor plan positions
 │   ├── migrate-floorplan-resize.js
-│   └── migrate-alert-thresholds.js  # Alert threshold settings
+│   ├── migrate-alert-thresholds.js  # Alert threshold settings
+│   └── migrate-indexes.js        # DB performance indexes
 │
 ├── src/
 │   ├── lib/
@@ -72,20 +74,42 @@ homeystay/
 │   │   ├── Sidebar.tsx           # App navigation sidebar
 │   │   ├── Modal.tsx             # Reusable modal dialog
 │   │   ├── StatCard.tsx          # Dashboard stat card
-│   │   └── Toast.tsx             # Toast notifications (success/error/warning)
+│   │   ├── Toast.tsx             # Toast notifications (success/error/warning)
+│   │   └── ServiceWorkerRegistration.tsx  # PWA service worker
 │   │
 │   └── app/
 │       ├── layout.tsx            # Root layout + Sidebar
 │       ├── globals.css           # Global styles + animations
-│       ├── page.tsx              # 📊 Dashboard (overview + 6-month chart)
+│       ├── loading.tsx           # Root loading skeleton
+│       ├── favicon.ico
 │       │
-│       ├── rooms/page.tsx        # 🚪 Room management (CRUD)
-│       ├── tenants/page.tsx      # 👤 Tenant management (CRUD)
-│       ├── meters/page.tsx       # ⚡ Meter reading input
-│       ├── billing/page.tsx      # 💰 Bill generation & status
-│       ├── settings/page.tsx     # ⚙️ Rates, thresholds, bathrooms
-│       ├── floorplan/page.tsx    # 🗺️ Drag-and-drop floor plan
-│       ├── report/page.tsx       # 📄 Monthly report
+│       ├── page.tsx                    # 📊 Dashboard — Server Component
+│       ├── DashboardClient.tsx         #    └─ Client: overview + 6-month chart
+│       │
+│       ├── rooms/
+│       │   ├── page.tsx                # 🚪 Rooms — Server Component
+│       │   └── RoomsClient.tsx         #    └─ Client: CRUD
+│       ├── tenants/
+│       │   ├── page.tsx                # 👤 Tenants — Server Component
+│       │   └── TenantsClient.tsx       #    └─ Client: CRUD
+│       ├── meters/
+│       │   ├── page.tsx                # ⚡ Meters — Server (thin wrapper)
+│       │   └── MetersClient.tsx        #    └─ Client: readings + month nav
+│       ├── billing/
+│       │   ├── page.tsx                # 💰 Billing — Server (initial month)
+│       │   └── BillingClient.tsx       #    └─ Client: generation + month nav
+│       ├── history/
+│       │   ├── page.tsx                # 📜 History — Server Component
+│       │   └── HistoryClient.tsx       #    └─ Client: room invoice history
+│       ├── settings/
+│       │   ├── page.tsx                # ⚙️ Settings — Server Component
+│       │   └── SettingsClient.tsx      #    └─ Client: rates, bathrooms
+│       ├── floorplan/
+│       │   ├── page.tsx                # 🗺️ Floorplan — Server Component
+│       │   └── FloorplanClient.tsx     #    └─ Client: drag-and-drop
+│       ├── report/
+│       │   ├── page.tsx                # 📄 Report — Server (thin wrapper)
+│       │   └── ReportClient.tsx        #    └─ Client: monthly report + print
 │       │
 │       └── api/                  # REST API routes
 │           ├── rooms/route.ts        # GET, POST, PUT, DELETE
@@ -94,9 +118,33 @@ homeystay/
 │           ├── billing/route.ts      # GET, POST (generate), PUT (status)
 │           ├── settings/route.ts     # GET, PUT
 │           ├── bathrooms/route.ts    # GET, POST, PUT, DELETE
-│           ├── floorplan/route.ts    # GET, POST
+│           ├── floorplan/route.ts    # GET, PUT, DELETE
 │           ├── dashboard/route.ts    # GET (6-month summary)
+│           ├── history/route.ts      # GET
 │           └── report/route.ts       # GET
+```
+
+---
+
+## RSC Architecture
+
+ทุกหน้าใช้ **React Server Components (RSC)** — Server `page.tsx` ดึงข้อมูลจาก DB โดยตรง แล้วส่งเป็น props ให้ Client Component ทำให้หน้าโหลดเร็วโดยไม่ต้องรอ loading spinner
+
+| Page | Strategy | Server ทำอะไร |
+|------|----------|---------------|
+| Dashboard, Rooms, Tenants, History | **Full RSC** | Query DB → ส่ง data ทั้งหมดเป็น props |
+| Settings, Floorplan | **Full RSC** | Query DB → ส่ง settings + rooms + bathrooms |
+| Billing | **RSC + Client re-fetch** | Query เดือนปัจจุบัน → Client re-fetch เมื่อเปลี่ยนเดือน |
+| Meters, Report | **Thin wrapper** | Server wrapper เปิด `force-dynamic` → Client จัดการ fetch เอง |
+
+```
+┌─────────────────────┐       props        ┌─────────────────────┐
+│   page.tsx          │ ──────────────────▶ │   *Client.tsx       │
+│   (Server Component)│                     │   (Client Component)│
+│   - pool.query()    │                     │   - useState()      │
+│   - No loading      │                     │   - Interactivity   │
+│   - DB direct       │                     │   - API for updates │
+└─────────────────────┘                     └─────────────────────┘
 ```
 
 ---
@@ -188,3 +236,4 @@ try {
 - ⚠️ ยังไม่มี authentication / authorization
 - ⚠️ ยังไม่มี automated tests
 - UI เป็นภาษาไทยทั้งหมด
+- ℹ️ ทุกหน้าใช้ RSC (`force-dynamic`) — data ถูกส่งมาพร้อม HTML ไม่ต้อง client-side fetch ตอนโหลดหน้า
