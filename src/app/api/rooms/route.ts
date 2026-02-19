@@ -77,6 +77,20 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
+
+        if (!id || isNaN(Number(id))) {
+            return NextResponse.json({ error: 'กรุณาระบุ ID ห้องที่ถูกต้อง' }, { status: 400 });
+        }
+
+        // ตรวจว่าห้องไม่มีผู้เช่า active
+        const activeTenants = await pool.query(
+            'SELECT COUNT(*) FROM tenants WHERE room_id=$1 AND is_active=true',
+            [id]
+        );
+        if (parseInt(activeTenants.rows[0].count) > 0) {
+            return NextResponse.json({ error: 'ไม่สามารถลบห้องที่มีผู้เช่าอยู่ได้' }, { status: 400 });
+        }
+
         await pool.query('DELETE FROM rooms WHERE id=$1', [id]);
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -202,6 +202,15 @@ export async function PUT(request: Request) {
     try {
         const body = await request.json();
         const { id, status } = body;
+
+        if (!id || isNaN(Number(id))) {
+            return NextResponse.json({ error: 'ไม่พบ ID บิล' }, { status: 400 });
+        }
+        const validStatuses = ['paid', 'pending', 'overdue'];
+        if (!status || !validStatuses.includes(status)) {
+            return NextResponse.json({ error: `สถานะไม่ถูกต้อง (ต้องเป็น: ${validStatuses.join(', ')})` }, { status: 400 });
+        }
+
         const result = await pool.query(
             'UPDATE invoices SET status=$1 WHERE id=$2 RETURNING *',
             [status, id]

@@ -90,6 +90,10 @@ export async function DELETE(request: Request) {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
+        if (!id || isNaN(Number(id))) {
+            return NextResponse.json({ error: 'กรุณาระบุ ID ผู้เช่าที่ถูกต้อง' }, { status: 400 });
+        }
+
         const tenant = await pool.query('SELECT room_id FROM tenants WHERE id=$1', [id]);
         const roomId = tenant.rows[0]?.room_id;
 

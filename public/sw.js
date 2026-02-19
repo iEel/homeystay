@@ -11,6 +11,9 @@ const STATIC_ASSETS = [
     '/floorplan',
 ];
 
+// API paths that contain sensitive data — never cache
+const SENSITIVE_API = ['/api/tenants', '/api/billing', '/api/history', '/api/report'];
+
 // Install — cache static shell
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -43,8 +46,15 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET
     if (request.method !== 'GET') return;
 
-    // API calls: network-first
+    // API calls
     if (url.pathname.startsWith('/api/')) {
+        // Sensitive APIs: network-only, never cache
+        if (SENSITIVE_API.some((p) => url.pathname.startsWith(p))) {
+            event.respondWith(fetch(request));
+            return;
+        }
+
+        // Other APIs: network-first with cache fallback
         event.respondWith(
             fetch(request)
                 .then((response) => {

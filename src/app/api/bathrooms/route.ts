@@ -105,6 +105,11 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
+
+        if (!id || isNaN(Number(id))) {
+            return NextResponse.json({ error: 'กรุณาระบุ ID ห้องน้ำที่ถูกต้อง' }, { status: 400 });
+        }
+
         await pool.query('DELETE FROM bathrooms WHERE id=$1', [id]);
         return NextResponse.json({ success: true });
     } catch (error) {
