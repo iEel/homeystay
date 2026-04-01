@@ -621,7 +621,7 @@ export default function MetersPage() {
                                                 value={r.electric_curr}
                                                 onChange={e => updateReading(room.id, 'electric_curr', e.target.value)}
                                                 placeholder="กรอกตัวเลข"
-                                                className="w-full px-3 py-2 text-sm border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-indigo-50/30"
+                                                className="meter-number-input w-full px-3 py-2 text-sm border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-indigo-50/30"
                                             />
                                         </div>
                                     </div>
@@ -641,7 +641,7 @@ export default function MetersPage() {
                                                 value={r.override_electric_units}
                                                 onChange={e => updateReading(room.id, 'override_electric_units', e.target.value)}
                                                 placeholder="หน่วย"
-                                                className="w-24 px-2 py-1 text-sm border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 bg-orange-50"
+                                                className="meter-number-input w-24 px-2 py-1 text-sm border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 bg-orange-50"
                                             />
                                         )}
                                     </div>
@@ -688,7 +688,7 @@ export default function MetersPage() {
                                                 value={r.water_faucet_curr}
                                                 onChange={e => updateReading(room.id, 'water_faucet_curr', e.target.value)}
                                                 placeholder="กรอกตัวเลข"
-                                                className="w-full px-3 py-2 text-sm border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-indigo-50/30"
+                                                className="meter-number-input w-full px-3 py-2 text-sm border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-indigo-50/30"
                                             />
                                         </div>
                                     </div>
@@ -708,7 +708,7 @@ export default function MetersPage() {
                                                 value={r.override_water_units}
                                                 onChange={e => updateReading(room.id, 'override_water_units', e.target.value)}
                                                 placeholder="หน่วย"
-                                                className="w-24 px-2 py-1 text-sm border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 bg-orange-50"
+                                                className="meter-number-input w-24 px-2 py-1 text-sm border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 bg-orange-50"
                                             />
                                         )}
                                     </div>
@@ -846,7 +846,7 @@ export default function MetersPage() {
                                             value={sr.water_curr}
                                             onChange={e => updateSharedReading(bathroom.id, 'water_curr', e.target.value)}
                                             placeholder="กรอกตัวเลข"
-                                            className="w-full px-4 py-2.5 border-2 border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-500 bg-white"
+                                            className="meter-number-input w-full px-4 py-2.5 border-2 border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-500 bg-white"
                                         />
                                     </div>
                                 </div>
@@ -867,7 +867,7 @@ export default function MetersPage() {
                                             value={sr.override_water_units}
                                             onChange={e => updateSharedReading(bathroom.id, 'override_water_units', e.target.value)}
                                             placeholder="หน่วย"
-                                            className="w-24 px-2 py-1 text-sm border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 bg-orange-50"
+                                            className="meter-number-input w-24 px-2 py-1 text-sm border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 bg-orange-50"
                                         />
                                     )}
                                 </div>
